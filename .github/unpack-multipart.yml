@@ -1,0 +1,29 @@
+name: Unpack stock-info repo (multi-part)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Reassemble ZIP from parts
+        run: |
+          for i in {1..10}; do 
+            cat repo.part$(printf "%02d" $i) >> payload.b64
+          done
+          base64 -d payload.b64 > payload.zip
+          unzip -o payload.zip -d extracted
+          cp -a extracted/. .
+
+      - name: Commit unpacked files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add --all
+          git commit -m "Unpacked multipart payload" || true
+          git push
